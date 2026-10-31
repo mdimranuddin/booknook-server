@@ -186,6 +186,32 @@ app.get("/borrows", async (req, res) => {
   }
 });
 
+// DELETE /borrows/:id - return a book
+app.delete("/borrows/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid borrow id" });
+    }
+
+    const borrow = await borrowsCollection.findOne({ _id: new ObjectId(id) });
+    if (!borrow) {
+      return res.status(404).send({ message: "Borrow not found" });
+    }
+
+    // Increase copies by 1
+    await booksCollection.updateOne(
+      { _id: new ObjectId(borrow.bookId) },
+      { $inc: { availableCopies: 1 } }
+    );
+
+    const result = await borrowsCollection.deleteOne({ _id: new ObjectId(id) });
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to return the book" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`BookNook server running on port ${port}`);
 });
