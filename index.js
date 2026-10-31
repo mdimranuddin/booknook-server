@@ -102,6 +102,20 @@ app.patch("/books/:id", async (req, res) => {
   }
 });
 
+// DELETE /books/:id - delete a book
+app.delete("/books/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid book id" });
+    }
+    const result = await booksCollection.deleteOne({ _id: new ObjectId(id) });
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to delete the book" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`BookNook server running on port ${port}`);
 });
