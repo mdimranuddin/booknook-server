@@ -172,6 +172,20 @@ app.post("/borrows", async (req, res) => {
   }
 });
 
+// GET /borrows - borrows of the logged in user
+app.get("/borrows", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const borrows = await borrowsCollection
+      .find({ userEmail: email })
+      .sort({ borrowDate: -1 })
+      .toArray();
+    res.send(borrows);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to get borrows" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`BookNook server running on port ${port}`);
 });
