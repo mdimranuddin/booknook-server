@@ -116,6 +116,62 @@ app.delete("/books/:id", async (req, res) => {
   }
 });
 
+// POST /borrows - borrow a book
+app.post("/borrows", async (req, res) => {
+  try {
+    const { bookId, userEmail, userName } = req.body;
+
+    if (!ObjectId.isValid(bookId)) {
+      return res.status(400).send({ message: "Invalid book id" });
+    }
+
+    const book = await booksCollection.findOne({ _id: new ObjectId(bookId) });
+    if (!book) {
+      return res.status(404).send({ message: "Book not found" });
+    }
+
+    // No double borrow
+    const alreadyBorrowed = await borrowsCollection.findOne({
+      bookId: bookId,
+      userEmail: userEmail,
+    });
+    if (alreadyBorrowed) {
+      return res
+        .status(400)
+        .send({ message: "You have already borrowed this book" });
+    }
+
+    // Decrease copies by 1 only if copies are available
+    const updateResult = await booksCollection.updateOne(
+      { _id: new ObjectId(bookId), availableCopies: { $gt: 0 } },
+      { $inc: { availableCopies: -1 } }
+    );
+    if (updateResult.modifiedCount === 0) {
+      return res.status(400).send({ message: "Book is not available" });
+    }
+
+    // Return date = 7 days after today
+    const borrowDate = new Date();
+    const returnDate = new Date();
+    returnDate.setDate(returnDate.getDate() + 7);
+
+    const newBorrow = {
+      bookId: bookId,
+      bookTitle: book.title,
+      bookImage: book.image,
+      userName: userName,
+      userEmail: userEmail,
+      borrowDate: borrowDate,
+      returnDate: returnDate,
+    };
+
+    const result = await borrowsCollection.insertOne(newBorrow);
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to borrow the book" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`BookNook server running on port ${port}`);
 });
