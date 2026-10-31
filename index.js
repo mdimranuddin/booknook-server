@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -37,6 +37,23 @@ app.get("/books", async (req, res) => {
     res.send(books);
   } catch (error) {
     res.status(500).send({ message: "Failed to get books" });
+  }
+});
+
+// GET /books/:id - one book
+app.get("/books/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid book id" });
+    }
+    const book = await booksCollection.findOne({ _id: new ObjectId(id) });
+    if (!book) {
+      return res.status(404).send({ message: "Book not found" });
+    }
+    res.send(book);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to get the book" });
   }
 });
 
